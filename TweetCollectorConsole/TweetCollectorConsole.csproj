@@ -5,10 +5,12 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RootNamespace>Nde.TwitterExperiment.TweetCollectorConsole</RootNamespace>
     <StartupObject>TweetCollectorConsole.Program</StartupObject>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="TweetinviAPI" Version="4.0.0" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.2" />
   </ItemGroup>
 
 </Project>
