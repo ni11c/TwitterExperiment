@@ -21,8 +21,9 @@ namespace TweetCollectorConsole
         private const string Track = "brexit";
 
         // Azure
+        private const string AzureStorageAccountName = "twitterexperimentstorage";
         private const string AzureAccountKey = "MY_ACCOUNT_KEY";
-        private static readonly string AzureStorageAccountConnString = $"DefaultEndpointsProtocol=https;AccountName=twitterexperimentstorage;AccountKey={AzureAccountKey};EndpointSuffix=core.windows.net";
+        private static readonly string AzureStorageAccountConnString = $"DefaultEndpointsProtocol=https;AccountName={AzureStorageAccountName};AccountKey={AzureAccountKey};EndpointSuffix=core.windows.net";
         private const string TableName = "Tweet";
         private const string BlobContainerName = "raw-tweets";
 
