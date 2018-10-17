@@ -14,14 +14,15 @@ namespace TweetCollectorConsole
         #region Constants
 
         // Twitter
-        private const string AccessToken = "50558915-WbZicbfrssfHn4IcsfHbYXzMGFoc5EmYpFvfzyzsM";
-        private const string AccessTokenSecret = "aau441Nz7Q1nP1XYQvIPtkDRZRcgUaW2nsFAUeDMBTz5P";
-        private const string ConsumerApiKey = "Al7LMCED4TL6mELVEN9VC1k3q";
-        private const string ConsumerApiSecret = "nxqYrh1dLlmzmuXD5NfN3wtfOVBBmHqWqG48K8tGu8NhuT9zT3";
+        private const string TwitterAccessToken = "MY-ACCESS-TOKEN";
+        private const string TwitterAccessTokenSecret = "MY-ACCESS-TOKEN-SECRET";
+        private const string TwitterConsumerApiKey = "MY-CONSUMER-API-KEY";
+        private const string TwitterConsumerApiSecret = "MY-CONSUMER-API-SECRET";
         private const string Track = "brexit";
 
         // Azure
-        private const string StorageAccountConnString = "DefaultEndpointsProtocol=https;AccountName=twitterexperimentstorage;AccountKey=9gdD3Jgnb+MEnrhjKwm0Aap5S8DIdmhOzfXqYqY7LzgwHylYm5yWl7FTXU9Xx8e/eBE8Y5/YVDs4o8xWtPkkHg==;EndpointSuffix=core.windows.net";
+        private const string AzureAccountKey = "MY_ACCOUNT_KEY";
+        private static readonly string AzureStorageAccountConnString = $"DefaultEndpointsProtocol=https;AccountName=twitterexperimentstorage;AccountKey={AzureAccountKey};EndpointSuffix=core.windows.net";
         private const string TableName = "Tweet";
         private const string BlobContainerName = "raw-tweets";
 
@@ -50,7 +51,7 @@ namespace TweetCollectorConsole
         private static void ConnectToTwitter()
         {
             Console.WriteLine("Connecting to twitter...");
-            Auth.SetUserCredentials(ConsumerApiKey, ConsumerApiSecret, AccessToken, AccessTokenSecret);
+            Auth.SetUserCredentials(TwitterConsumerApiKey, TwitterConsumerApiSecret, TwitterAccessToken, TwitterAccessTokenSecret);
             var user = User.GetAuthenticatedUser();
             Console.WriteLine($"Succesfully connected as user {user}.");
         }
@@ -60,7 +61,7 @@ namespace TweetCollectorConsole
             ConnectToTwitter();
 
             Console.WriteLine($"Listening to tweets containing the word '{Track}' and store them in azure table...");
-            if (CloudStorageAccount.TryParse(StorageAccountConnString, out var storageAccount))
+            if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
             {
                 var stream = Stream.CreateFilteredStream();
                 stream.AddTrack(Track);
@@ -82,8 +83,8 @@ namespace TweetCollectorConsole
 
         private static async Task TestAzureStorage()
         {
-            Console.WriteLine($"Trying to connect to storage account using connection string {StorageAccountConnString}...");
-            if (CloudStorageAccount.TryParse(StorageAccountConnString, out var storageAccount))
+            Console.WriteLine($"Trying to connect to storage account using connection string {AzureStorageAccountConnString}...");
+            if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
             {
                 Console.WriteLine("Success !");
 
@@ -98,9 +99,16 @@ namespace TweetCollectorConsole
             Console.WriteLine($"Writing blob to blob container {BlobContainerName}...");
             var blobClient = storageAccount.CreateCloudBlobClient();
             var blobContainer = blobClient.GetContainerReference(blobContainerName);
-            var blockBlob = blobContainer.GetBlockBlobReference(Guid.NewGuid().ToString());
-            await blockBlob.UploadTextAsync("Hello, blob!");
-            Console.WriteLine("Success !");
+            if (await blobContainer.CreateIfNotExistsAsync())
+            {
+                var blockBlob = blobContainer.GetBlockBlobReference(Guid.NewGuid().ToString());
+                await blockBlob.UploadTextAsync("Hello, blob!");
+                Console.WriteLine("Success !");
+            }
+            else
+            {
+                Console.WriteLine($"Failed to create blob container '{blobContainerName}'. Abort.");
+            }
             Console.ReadKey();
         }
 
@@ -128,11 +136,18 @@ namespace TweetCollectorConsole
             Console.WriteLine($"Writing test tweet to table {tableName}...");
             var tableClient = storageAccount.CreateCloudTableClient();
             var table = tableClient.GetTableReference(tableName);
-            await table.CreateIfNotExistsAsync();
-            var tweet = TweetEntity.TestTweet();
-            var insertOperation = TableOperation.Insert(tweet);
-            await table.ExecuteAsync(insertOperation);
-            Console.WriteLine("Success !");
+            if (await table.CreateIfNotExistsAsync())
+            {
+                var tweet = TweetEntity.TestTweet();
+                var insertOperation = TableOperation.Insert(tweet);
+                await table.ExecuteAsync(insertOperation);
+                Console.WriteLine("Success !");
+            }
+            else
+            {
+                Console.WriteLine($"Failed to create table '{tableName}'. Abort.");
+            }
+            
             Console.ReadKey();
         }
 
