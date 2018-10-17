@@ -32,48 +32,64 @@ namespace TweetCollectorConsole
             if (CloudStorageAccount.TryParse(StorageAccountConnString, out var storageAccount))
             {
                 Console.WriteLine("Success !");
-                
-                Console.WriteLine($"Writing blob to blob container {BlobContainerName}...");
-                var blobClient = storageAccount.CreateCloudBlobClient();
-                var blobContainer = blobClient.GetContainerReference(BlobContainerName);
-                CloudBlockBlob blockBlob = blobContainer.GetBlockBlobReference(Guid.NewGuid().ToString());
-                await blockBlob.UploadTextAsync("Hello, blob!");
-                Console.WriteLine("Success !");
-                Console.ReadKey();
-
-                Console.WriteLine($"Reading blobs from container {BlobContainerName}...");
-                BlobContinuationToken blobContinuationToken = null;
-                do
-                {
-                    var results = await blobContainer.ListBlobsSegmentedAsync(null, blobContinuationToken);
-                    blobContinuationToken = results.ContinuationToken;
-                    foreach (IListBlobItem item in results.Results)
-                    {
-                        Console.WriteLine($"Address:{item.Uri}");
-                    }
-                } while (blobContinuationToken != null);
-
-                Console.ReadKey();
-
-                Console.WriteLine($"Writing fake tweet to table {TableName}...");
-                var tableClient = storageAccount.CreateCloudTableClient();
-                var table = tableClient.GetTableReference(TableName);
-                var tweet = new TweetEntity(DateTime.Now, "Hello TweetCollector !");
-                TableOperation insertOperation = TableOperation.Insert(tweet);
-                await table.ExecuteAsync(insertOperation);
-                Console.WriteLine("Success !");
+                await WriteBlob(storageAccount, BlobContainerName);
+                await ReadBlobs(storageAccount, BlobContainerName);
+                await WriteTableEntity(storageAccount, TableName);
             }
+        }
+
+        private static async Task WriteBlob(CloudStorageAccount storageAccount, string blobContainerName)
+        {
+            Console.WriteLine($"Writing blob to blob container {BlobContainerName}...");
+            var blobClient = storageAccount.CreateCloudBlobClient();
+            var blobContainer = blobClient.GetContainerReference(blobContainerName);
+            CloudBlockBlob blockBlob = blobContainer.GetBlockBlobReference(Guid.NewGuid().ToString());
+            await blockBlob.UploadTextAsync("Hello, blob!");
+            Console.WriteLine("Success !");
+            Console.ReadKey();
+        }
+
+        private static async Task ReadBlobs(CloudStorageAccount storageAccount, string blobContainerName)
+        {
+            Console.WriteLine($"Reading blobs from container {blobContainerName}...");
+            var blobClient = storageAccount.CreateCloudBlobClient();
+            var blobContainer = blobClient.GetContainerReference(blobContainerName);
+            BlobContinuationToken blobContinuationToken = null;
+            do
+            {
+                var results = await blobContainer.ListBlobsSegmentedAsync(null, blobContinuationToken);
+                blobContinuationToken = results.ContinuationToken;
+                foreach (IListBlobItem item in results.Results)
+                {
+                    Console.WriteLine($"Address:{item.Uri}");
+                }
+            }
+            while (blobContinuationToken != null);
+
+            Console.ReadKey();
+        }
+
+        private static async Task WriteTableEntity(CloudStorageAccount storageAccount, string tableName)
+        {
+            Console.WriteLine($"Writing fake tweet to table {tableName}...");
+            var tableClient = storageAccount.CreateCloudTableClient();
+            var table = tableClient.GetTableReference(tableName);
+            await table.CreateIfNotExistsAsync();
+            var tweet = new TweetEntity(123, "Hello TweetCollector !");
+            TableOperation insertOperation = TableOperation.Insert(tweet);
+            await table.ExecuteAsync(insertOperation);
+            Console.WriteLine("Success !");
         }
     }
 
     public class TweetEntity : TableEntity 
     {
-        public DateTime TimeStamp {get;}
+        public int TweetNumber {get;}
         public string Text{get;}
 
-        public TweetEntity(DateTime timeStamp, string text)
+        public TweetEntity(int tweetNumber, string text)
         {
-            TimeStamp = timeStamp;
+            TweetNumber = tweetNumber;
             Text = text;
         }
     }
