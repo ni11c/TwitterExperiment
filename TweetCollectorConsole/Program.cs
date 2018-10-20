@@ -31,11 +31,12 @@ namespace TweetCollectorConsole
 
         #region Services
 
-        public static async Task Main()
+        public static async Task Main(string[] args)
         {
             //TestTwitter();
             //await TestAzureStorage();
-            await StoreTweets(Track, TableName);
+            string track = args != null && args.Length > 1 ? args[0] : Track;
+            await StoreTweets(track, TableName);
         }
 
         private static void TestTwitter()
@@ -57,11 +58,14 @@ namespace TweetCollectorConsole
             Console.WriteLine($"Succesfully connected as user {user}.");
         }
 
-        private static async Task StoreTweets(string track, string tableName)
+        private static async Task StoreTweets(string track, string tableName = "")
         {
             ConnectToTwitter();
 
-            Console.WriteLine($"Listening to tweets containing the word '{Track}' and store them in azure table...");
+            if (string.IsNullOrWhiteSpace(tableName))
+                tableName = $"tweets-{track}";
+
+            Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in azure table...");
             if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
             {
                 var stream = Stream.CreateFilteredStream();
