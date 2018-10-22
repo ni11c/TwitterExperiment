@@ -65,7 +65,6 @@ namespace TweetCollectorConsole
             if (string.IsNullOrWhiteSpace(tableName))
                 tableName = $"tweets-{track}";
 
-            Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in azure table...");
             if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
             {
                 var stream = Stream.CreateFilteredStream();
@@ -74,7 +73,7 @@ namespace TweetCollectorConsole
                 var tableClient = storageAccount.CreateCloudTableClient();
                 var table = tableClient.GetTableReference(tableName);
                 await table.CreateIfNotExistsAsync();
-                
+
                 stream.MatchingTweetReceived += async (sender, args) =>
                 {
                     Console.WriteLine($"Tweet received: {args.Tweet.Text}");
@@ -83,6 +82,11 @@ namespace TweetCollectorConsole
                     await table.ExecuteAsync(insertOperation);
                 };
                 stream.StartStreamMatchingAllConditions();
+                Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in azure table {tableName}...");
+            }
+            else
+            {
+                Console.WriteLine($"Unable to connect to storage account with connection string {AzureStorageAccountConnString}.");
             }
         }
 
