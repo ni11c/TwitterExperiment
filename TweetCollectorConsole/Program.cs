@@ -34,9 +34,9 @@ namespace TweetCollectorConsole
         public static async Task Main(string[] args)
         {
             //TestTwitter();
-            //await TestAzureStorage();
+            //await TestAzureStorageAsync();
             string track = args != null && args.Length > 1 ? args[0] : Track;
-            await StoreTweets(track, TableName);
+            await StoreTweetsAsync(track, TableName);
         }
 
         private static void TestTwitter()
@@ -53,12 +53,13 @@ namespace TweetCollectorConsole
         private static void ConnectToTwitter()
         {
             Console.WriteLine("Connecting to twitter...");
+            
             Auth.SetUserCredentials(TwitterConsumerApiKey, TwitterConsumerApiSecret, TwitterAccessToken, TwitterAccessTokenSecret);
             var user = User.GetAuthenticatedUser();
             Console.WriteLine($"Succesfully connected as user {user}.");
         }
 
-        private static async Task StoreTweets(string track, string tableName = "")
+        private static async Task StoreTweetsAsync(string track, string tableName = "")
         {
             ConnectToTwitter();
 
@@ -90,20 +91,20 @@ namespace TweetCollectorConsole
             }
         }
 
-        private static async Task TestAzureStorage()
+        private static async Task TestAzureStorageAsync()
         {
             Console.WriteLine($"Trying to connect to storage account using connection string {AzureStorageAccountConnString}...");
             if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
             {
                 Console.WriteLine("Success !");
 
-                //await WriteBlob(storageAccount, BlobContainerName);
-                //await ReadBlobs(storageAccount, BlobContainerName);
-                await WriteTableEntity(storageAccount, TableName);
+                //await WriteBlobAsync(storageAccount, BlobContainerName);
+                //await ReadBlobsAsync(storageAccount, BlobContainerName);
+                await WriteTableEntityAsync(storageAccount, TableName);
             }
         }
 
-        private static async Task WriteBlob(CloudStorageAccount storageAccount, string blobContainerName)
+        private static async Task WriteBlobAsync(CloudStorageAccount storageAccount, string blobContainerName)
         {
             Console.WriteLine($"Writing blob to blob container {BlobContainerName}...");
             var blobClient = storageAccount.CreateCloudBlobClient();
@@ -121,7 +122,7 @@ namespace TweetCollectorConsole
             Console.ReadKey();
         }
 
-        private static async Task ReadBlobs(CloudStorageAccount storageAccount, string blobContainerName)
+        private static async Task ReadBlobsAsync(CloudStorageAccount storageAccount, string blobContainerName)
         {
             Console.WriteLine($"Reading blobs from container {blobContainerName}...");
             var blobClient = storageAccount.CreateCloudBlobClient();
@@ -140,7 +141,7 @@ namespace TweetCollectorConsole
             Console.ReadKey();
         }
 
-        private static async Task WriteTableEntity(CloudStorageAccount storageAccount, string tableName)
+        private static async Task WriteTableEntityAsync(CloudStorageAccount storageAccount, string tableName)
         {
             Console.WriteLine($"Writing test tweet to table {tableName}...");
             var tableClient = storageAccount.CreateCloudTableClient();
