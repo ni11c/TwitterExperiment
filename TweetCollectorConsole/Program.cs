@@ -1,11 +1,14 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
 using Tweetinvi;
 using Tweetinvi.Models;
+using Stream = Tweetinvi.Stream;
 
 namespace TweetCollectorConsole
 {
@@ -13,17 +16,7 @@ namespace TweetCollectorConsole
     {
         #region Constants
 
-        // Twitter
-        private const string TwitterAccessToken = "MY-ACCESS-TOKEN";
-        private const string TwitterAccessTokenSecret = "MY-ACCESS-TOKEN-SECRET";
-        private const string TwitterConsumerApiKey = "MY-CONSUMER-API-KEY";
-        private const string TwitterConsumerApiSecret = "MY-CONSUMER-API-SECRET";
-        private const string Track = "brexit";
-
-        // Azure
-        private const string AzureStorageAccountName = "twitterexperimentstorage";
-        private const string AzureAccountKey = "MY_ACCOUNT_KEY";
-        private static readonly string AzureStorageAccountConnString = $"DefaultEndpointsProtocol=https;AccountName={AzureStorageAccountName};AccountKey={AzureAccountKey};EndpointSuffix=core.windows.net";
+        private const string TrackDefault = "dotnet";
         private const string TableName = "Tweet";
         private const string BlobContainerName = "raw-tweets";
 
@@ -33,19 +26,26 @@ namespace TweetCollectorConsole
 
         public static async Task Main(string[] args)
         {
-            //TestTwitter();
+            string track = args != null && args.Length > 1 ? args[0] : TrackDefault;
+            var builder = new ConfigurationBuilder()
+                          .SetBasePath(Directory.GetCurrentDirectory())
+                          .AddJsonFile("appsettings.json");
+
+            var configuration = builder.Build();
+
+
+            //TestTwitter(track);
             //await TestAzureStorageAsync();
-            string track = args != null && args.Length > 1 ? args[0] : Track;
             await StoreTweetsAsync(track, TableName);
         }
 
-        private static void TestTwitter()
+        private static void TestTwitter(string track)
         {
             ConnectToTwitter();
 
-            Console.WriteLine($"Listening to tweets containing the word '{Track}'...");
+            Console.WriteLine($"Listening to tweets containing the word '{track}'...");
             var stream = Stream.CreateFilteredStream();
-            stream.AddTrack(Track);
+            stream.AddTrack(track);
             stream.MatchingTweetReceived += (sender, args) => { Console.WriteLine($"Tweet received: {args.Tweet.Text}"); };
             stream.StartStreamMatchingAllConditions();
         }
