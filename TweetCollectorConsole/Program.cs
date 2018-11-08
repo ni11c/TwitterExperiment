@@ -50,47 +50,6 @@ namespace TweetCollectorConsole
             stream.StartStreamMatchingAllConditions();
         }
 
-        private static void ConnectToTwitter()
-        {
-            Console.WriteLine("Connecting to twitter...");
-            
-            Auth.SetUserCredentials(TwitterConsumerApiKey, TwitterConsumerApiSecret, TwitterAccessToken, TwitterAccessTokenSecret);
-            var user = User.GetAuthenticatedUser();
-            Console.WriteLine($"Succesfully connected as user {user}.");
-        }
-
-        private static async Task StoreTweetsAsync(string track, string tableName = "")
-        {
-            ConnectToTwitter();
-
-            if (string.IsNullOrWhiteSpace(tableName))
-                tableName = $"tweets-{track}";
-
-            if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
-            {
-                var stream = Stream.CreateFilteredStream();
-                stream.AddTrack(Track);
-
-                var tableClient = storageAccount.CreateCloudTableClient();
-                var table = tableClient.GetTableReference(tableName);
-                await table.CreateIfNotExistsAsync();
-
-                stream.MatchingTweetReceived += async (sender, args) =>
-                {
-                    Console.WriteLine($"Tweet received: {args.Tweet.Text}");
-                    var tweetEntity = args.Tweet.Map();
-                    var insertOperation = TableOperation.Insert(tweetEntity);
-                    await table.ExecuteAsync(insertOperation);
-                };
-                stream.StartStreamMatchingAllConditions();
-                Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in azure table {tableName}...");
-            }
-            else
-            {
-                Console.WriteLine($"Unable to connect to storage account with connection string {AzureStorageAccountConnString}.");
-            }
-        }
-
         private static async Task TestAzureStorageAsync()
         {
             Console.WriteLine($"Trying to connect to storage account using connection string {AzureStorageAccountConnString}...");
@@ -164,76 +123,5 @@ namespace TweetCollectorConsole
         #endregion
     }
 
-    public class TweetEntity : TableEntity
-    {
-        #region Constants
 
-        private const string DefaultPartitionKey = "67ca5b5d-8ce1-4d0c-a785-061796ea4313";
-
-        #endregion
-
-        #region Properties
-
-        public DateTime CreatedAt { get; set; }
-        public string CreatedBy { get; set; }
-        public string HashTags { get; set; }
-        public bool IsRetweet { get; set; }
-        public int RetweetCount { get; set; }
-        public bool Retweeted { get; set; }
-        public string Source { get; set; }
-        public string Text { get; set; }
-
-        #endregion
-
-        #region Initialization
-
-        public TweetEntity(string rowKey = null, string partitionKey = DefaultPartitionKey)
-        {
-            PartitionKey = partitionKey;
-            RowKey = rowKey ?? Guid.NewGuid().ToString();
-        }
-
-        #endregion
-
-        #region Services
-
-        public static TweetEntity TestTweet()
-        {
-            return new TweetEntity
-            {
-                CreatedAt = DateTime.Now,
-                CreatedBy = "TweetCollectorConsole",
-                Text = "This is a test tweet entity"
-            };
-        }
-
-        #endregion
-    }
-
-    public static class TweetMapper
-    {
-        #region Services
-
-        public static TweetEntity Map(this ITweet tweet)
-        {
-            if (tweet == null)
-            {
-                throw new ArgumentNullException("Supplied tweet is null. Err!");
-            }
-
-            return new TweetEntity
-            {
-                CreatedAt = tweet.CreatedAt,
-                CreatedBy = tweet.CreatedBy.Name,
-                Text = tweet.Text,
-                Source = tweet.Source,
-                Retweeted = tweet.Retweeted,
-                RetweetCount = tweet.RetweetCount,
-                IsRetweet = tweet.IsRetweet,
-                HashTags = string.Join(',', tweet.Hashtags.Select(hashtag => hashtag.Text))
-            };
-        }
-
-        #endregion
-    }
 }
