@@ -10,7 +10,7 @@ using Tweetinvi;
 using Tweetinvi.Models;
 using Stream = Tweetinvi.Stream;
 
-namespace TweetCollectorConsole
+namespace Nde.TwitterExperiment.TweetCollectorConsole
 {
     internal static class Program
     {

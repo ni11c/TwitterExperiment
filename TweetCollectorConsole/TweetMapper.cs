@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Tweetinvi.Models;
 
-namespace Nde.TwitterExperiment.Twitter.Core
+namespace Nde.TwitterExperiment.TweetCollectorConsole
 {
 
     public static class TweetMapper

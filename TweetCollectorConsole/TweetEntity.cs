@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Nde.TwitterExperiment.Twitter.Core
+namespace Nde.TwitterExperiment.TweetCollectorConsole
 {
     public class TweetEntity : TableEntity
     {
@@ -49,5 +50,4 @@ namespace Nde.TwitterExperiment.Twitter.Core
 
         #endregion
     }
-
 }
