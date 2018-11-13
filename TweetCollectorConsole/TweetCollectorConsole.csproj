@@ -23,6 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CloudStorage.Azure\CloudStorage.Azure.csproj" />
+    <ProjectReference Include="..\CloudStorage\CloudStorage.csproj" />
+    <ProjectReference Include="..\Twitter.Core\Twitter.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="System">
       <HintPath>System</HintPath>
     </Reference>

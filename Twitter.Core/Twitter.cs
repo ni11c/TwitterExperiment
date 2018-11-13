@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+using Nde.TwitterExperiment.CloudStorage;
 using Tweetinvi;
 using Tweetinvi.Models;
 
@@ -9,7 +7,23 @@ namespace Nde.TwitterExperiment.Twitter.Core
 {
     public class Twitter
     {
-        public IAuthenticatedUser AuthenticatedUser { get; private set; }
+        #region Properties
+
+        private IAuthenticatedUser AuthenticatedUser { get; set; }
+        private ICloudStorage Storage { get; }
+
+        #endregion
+
+        #region Initialization
+
+        public Twitter(ICloudStorage storage)
+        {
+            Storage = storage ?? throw new ArgumentNullException($"argument {nameof(storage)} cannot be null.");
+        }
+
+        #endregion
+
+        #region Services
 
         public void Connect(string consumerApiKey, string consumerApiSecret, string accessToken, string accessTokenSecret)
         {
@@ -19,35 +33,31 @@ namespace Nde.TwitterExperiment.Twitter.Core
             Console.WriteLine($"Succesfully connected as user {AuthenticatedUser}.");
         }
 
-        public async Task StoreTweetsAsync(string track, string tableName = "")
+        public void StoreTweetsAsync<T>(string track, Func<ITweet, T> map, string tableName = "")
         {
             if (string.IsNullOrWhiteSpace(tableName))
+            {
                 tableName = $"tweets-{track}";
+            }
 
-            if (CloudStorageAccount.TryParse(AzureStorageAccountConnString, out var storageAccount))
+            var stream = Stream.CreateFilteredStream();
+            stream.AddTrack(track);
+
+            bool success;
+            stream.MatchingTweetReceived += async (sender, args) =>
             {
-                var stream = Stream.CreateFilteredStream();
-                stream.AddTrack(Track);
-
-                var tableClient = storageAccount.CreateCloudTableClient();
-                var table = tableClient.GetTableReference(tableName);
-                await table.CreateIfNotExistsAsync();
-
-                stream.MatchingTweetReceived += async (sender, args) =>
+                Console.WriteLine($"Tweet received: {args.Tweet.Text}");
+                var tweetEntity = map(args.Tweet);
+                success = await Storage.InsertToTable(tweetEntity, tableName);
+                if (!success)
                 {
-                    Console.WriteLine($"Tweet received: {args.Tweet.Text}");
-                    var tweetEntity = args.Tweet.Map();
-                    var insertOperation = TableOperation.Insert(tweetEntity);
-                    await table.ExecuteAsync(insertOperation);
-                };
-                stream.StartStreamMatchingAllConditions();
-                Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in azure table {tableName}...");
-            }
-            else
-            {
-                Console.WriteLine($"Unable to connect to storage account with connection string {AzureStorageAccountConnString}.");
-            }
+                    Console.WriteLine($"Failed to store tweet to storage table {tableName}.");
+                }
+            };
+            stream.StartStreamMatchingAllConditions();
+            Console.WriteLine($"Listening to tweets containing the word '{track}' and store them in table {tableName}...");
         }
 
+        #endregion
     }
 }

@@ -43,10 +43,14 @@ namespace Nde.TwitterExperiment.CloudStorage.Azure
             }
 
             var table = await CreateTableIfNotExistsAsync(tableName);
-            var insertOperation = TableOperation.Insert(entity as TableEntity);
+            var insertOperation = TableOperation.Insert(tableEntity);
             var result = await table.ExecuteAsync(insertOperation);
             return result.HttpStatusCode == 200;
         }
+
+        #endregion
+
+        #region Helpers
 
         private async Task<CloudTable> CreateTableIfNotExistsAsync(string tableName)
         {

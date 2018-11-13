@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Nde.TwitterExperiment.CloudStorage
 {
     public interface ICloudStorage
     {
+        #region Services
+
         Task<bool> InsertToTable<T>(T entity, string tableName);
+
+        #endregion
     }
 }
