@@ -1,5 +1,9 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Nde.TwitterExperiment.CloudStorage;
 using Nde.TwitterExperiment.CloudStorage.Azure;
 
@@ -13,26 +17,67 @@ namespace Nde.TwitterExperiment.TweetCollectorConsole
         private const string TableName = "Tweet";
         private const string TrackDefault = "dotnet";
 
+        private const string _prefix = "TwitterExperiment_";
+        private const string _appsettings = "appsettings.json";
+        private const string _hostsettings = "hostsettings.json";
+
         #endregion
 
         #region Services
 
-        public static void Main(string[] args)
+        //public static void Main(string[] args)
+        //{
+        //    string track = args != null && args.Length > 1 ? args[0] : TrackDefault;
+        //    var builder = new ConfigurationBuilder()
+        //                  .SetBasePath(Directory.GetCurrentDirectory())
+        //                  .AddJsonFile("appsettings.json")
+        //                  .AddEnvironmentVariables();
+
+        //    var configuration = builder.Build();
+        //    ICloudStorage azureStorage = new AzureStorage("connStringHere");
+        //    var twitter = new Twitter.Core.Twitter(azureStorage);
+        //    twitter.Connect("apiKey", "apiSecret", "token", "tokenSecret");
+        //    twitter.StoreTweetsAsync(track, tweet => tweet.Map());
+
+        //    //TestTwitter(track);
+        //    //await TestAzureStorageAsync();
+        //    //await StoreTweetsAsync(track, TableName);
+        //}
+
+        public static async Task Main(string[] args)
         {
-            string track = args != null && args.Length > 1 ? args[0] : TrackDefault;
-            var builder = new ConfigurationBuilder()
-                          .SetBasePath(Directory.GetCurrentDirectory())
-                          .AddJsonFile("appsettings.json");
+            var host = new HostBuilder()
+                .ConfigureHostConfiguration(configHost =>
+                {
+                    configHost.SetBasePath(Directory.GetCurrentDirectory());
+                    configHost.AddJsonFile(_hostsettings, optional: true);
+                    configHost.AddEnvironmentVariables(prefix: _prefix);
+                    configHost.AddCommandLine(args);
+                })
+                .ConfigureAppConfiguration((hostContext, configApp) =>
+                {
+                    configApp.SetBasePath(Directory.GetCurrentDirectory());
+                    configApp.AddJsonFile(_appsettings, optional: true);
+                    configApp.AddJsonFile(
+                        $"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json",
+                        optional: true);
+                    configApp.AddEnvironmentVariables(prefix: _prefix);
+                    configApp.AddCommandLine(args);
+                })
+                .ConfigureLogging((hostContext, configLogging) =>
+                {
+                    configLogging.AddConsole();
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddLogging();
+                    services.Configure<ApplicationSettings>(hostContext.Configuration.GetSection("application"));
+                    services.AddHostedService<TweetCollectorHostedService>();
+                })
+                .UseConsoleLifetime()
+                .Build();
 
-            var configuration = builder.Build();
-            ICloudStorage azureStorage = new AzureStorage("connStringHere");
-            var twitter = new Twitter.Core.Twitter(azureStorage);
-            twitter.Connect("apiKey", "apiSecret", "token", "tokenSecret");
-            twitter.StoreTweetsAsync(track, tweet => tweet.Map());
-
-            //TestTwitter(track);
-            //await TestAzureStorageAsync();
-            //await StoreTweetsAsync(track, TableName);
+            await host.RunAsync();
         }
 
         #endregion
